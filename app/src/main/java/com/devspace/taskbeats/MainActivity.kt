@@ -15,6 +15,8 @@ class MainActivity : AppCompatActivity() {
     private var categories = listOf<CategoryUiData>()
     private var tasks = listOf<TaskUiData>()
 
+    private val categoryAdapter = CategoryListAdapter()
+
     private val db by lazy {
         Room.databaseBuilder(
             applicationContext,
@@ -38,14 +40,21 @@ class MainActivity : AppCompatActivity() {
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
 
         val taskAdapter = TaskListAdapter()
-        val categoryAdapter = CategoryListAdapter()
+
 
         categoryAdapter.setOnClickListener { selected ->
-            if(selected.name == "+"){
-                val createCategoryBottomSheet = CreateCategoryBottomSheet()
-                createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet" )
+            if (selected.name == "+") {
+                val createCategoryBottomSheet = CreateCategoryBottomSheet { categoryName ->
+                    val categoryEntity = CategoryEntity(
+                        name = categoryName,
+                        isSelected = false
+                    )
+                    insertCategory(categoryEntity)
 
-            }else{
+                }
+                createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet")
+
+            } else {
                 val categoryTemp = categories.map { item ->
                     when {
                         item.name == selected.name && !item.isSelected -> item.copy(
@@ -68,14 +77,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         rvCategory.adapter = categoryAdapter
-        getCategoriesFromDataBase(categoryAdapter)
+        GlobalScope.launch(Dispatchers.IO) {
+            getCategoriesFromDataBase()
+        }
+
 
         rvTask.adapter = taskAdapter
         getTaskFromDataBase(taskAdapter)
     }
 
-    private fun getCategoriesFromDataBase(adapter: CategoryListAdapter) {
-        GlobalScope.launch(Dispatchers.IO){
+    private fun getCategoriesFromDataBase() {
+
             val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
             val categoriesUiData = categoriesFromDb.map {
                 CategoryUiData(
@@ -86,34 +98,44 @@ class MainActivity : AppCompatActivity() {
 
             // Add fake + category
             categoriesUiData.add(
-            CategoryUiData(
-                name = "+",
-                isSelected = false
+                CategoryUiData(
+                    name = "+",
+                    isSelected = false
                 )
             )
             GlobalScope.launch(Dispatchers.Main) {
                 categories = categoriesUiData
-                adapter.submitList(categoriesUiData)
+                categoryAdapter.submitList(categoriesUiData)
             }
-        }
+
     }
-    private fun getTaskFromDataBase(adapter: TaskListAdapter){
-        GlobalScope.launch(Dispatchers.IO){
+
+    private fun getTaskFromDataBase(adapter: TaskListAdapter) {
+        GlobalScope.launch(Dispatchers.IO) {
             val taskFromDb: List<TaskEntity> = taskDao.getAll()
             val taskUiData = taskFromDb.map {
                 TaskUiData(
                     name = it.name,
                     category = it.category
+
                 )
             }
-        GlobalScope.launch(Dispatchers.Main) {
-            tasks = taskUiData
-            adapter.submitList(taskUiData)
+            GlobalScope.launch(Dispatchers.Main) {
+                tasks = taskUiData
+                adapter.submitList(taskUiData)
             }
-
         }
+
+    }
+    private fun insertCategory(categoryEntity: CategoryEntity){
+        GlobalScope.launch(Dispatchers.IO){
+             categoryDao.insert(categoryEntity)
+            getCategoriesFromDataBase()
+        }
+
     }
 }
+
 
 
 
