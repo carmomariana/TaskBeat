@@ -2,6 +2,7 @@ package com.devspace.taskbeats
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.Settings.Global
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
@@ -21,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         ).build()
     }
 
-    private val categoryDao by lazy {
+    private val categoryDao: CategoryDao by lazy {
         db.getCategoryDao()
     }
 
@@ -33,8 +34,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
-
         val rvCategory = findViewById<RecyclerView>(R.id.rv_categories)
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
 
@@ -43,7 +42,9 @@ class MainActivity : AppCompatActivity() {
 
         categoryAdapter.setOnClickListener { selected ->
             if(selected.name == "+"){
-                Snackbar.make(rvCategory, "+ is selected", Snackbar.LENGTH_LONG).show()
+                val createCategoryBottomSheet = CreateCategoryBottomSheet()
+                createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet" )
+
             }else{
                 val categoryTemp = categories.map { item ->
                     when {
@@ -90,8 +91,10 @@ class MainActivity : AppCompatActivity() {
                 isSelected = false
                 )
             )
-            categories = categoriesUiData
-            adapter.submitList(categoriesUiData)
+            GlobalScope.launch(Dispatchers.Main) {
+                categories = categoriesUiData
+                adapter.submitList(categoriesUiData)
+            }
         }
     }
     private fun getTaskFromDataBase(adapter: TaskListAdapter){
@@ -103,8 +106,11 @@ class MainActivity : AppCompatActivity() {
                     category = it.category
                 )
             }
+        GlobalScope.launch(Dispatchers.Main) {
             tasks = taskUiData
             adapter.submitList(taskUiData)
+            }
+
         }
     }
 }
