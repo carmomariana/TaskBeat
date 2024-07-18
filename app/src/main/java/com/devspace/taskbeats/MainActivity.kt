@@ -6,6 +6,7 @@ import android.provider.Settings.Global
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -38,8 +39,20 @@ class MainActivity : AppCompatActivity() {
 
         val rvCategory = findViewById<RecyclerView>(R.id.rv_categories)
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
-
+        val fabCreateTask = findViewById<FloatingActionButton>(R.id.fab_create_task)
         val taskAdapter = TaskListAdapter()
+
+        fabCreateTask.setOnClickListener{
+            val createTaskBottomSheet = CreateTaskBottomSheet(
+                categories
+            ){ taskToBeCreated ->
+
+            }
+            createTaskBottomSheet.show(
+            supportFragmentManager,
+                "createTaskBottomSheet"
+            )
+        }
 
 
         categoryAdapter.setOnClickListener { selected ->
