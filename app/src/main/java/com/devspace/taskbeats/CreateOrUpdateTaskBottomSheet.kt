@@ -29,38 +29,12 @@ class CreateOrUpdateTaskBottomSheet(
         val tvTitle = view.findViewById<TextView>(R.id.tv_title)
         val btnCreate = view.findViewById<Button>(R.id.btn_task_create)
         val tieTaskName = view.findViewById<TextInputEditText>(R.id.tie_task_name)
+        val spinner: Spinner = view.findViewById(R.id.category_list)
 
-        if(task == null) {
-            tvTitle.setText(R.string.create_task_title)
-            btnCreate.setText(R.string.create)
-        }else{
-            tvTitle.setText(R.string.update_task_title)
-            btnCreate.setText(R.string.update)
-        }
-
-        var taskCategory : String? = null
-
-        btnCreate.setOnClickListener{
-            val name = tieTaskName.text.toString()
-            if(taskCategory != null){
-                requireNotNull(taskCategory)
-
-                onCreateClicked.invoke(
-                TaskUiData(
-                    id = 0,
-                    name = name,
-                    category = requireNotNull(taskCategory)
-                )
-                )
-                dismiss()
-            } else {
-                Snackbar.make(btnCreate, "Please select a category", Snackbar.LENGTH_LONG).show()
-            }
-
-        }
+        var taskCategory: String? = null
         val categoryStr : List<String> = categoryList.map { it.name }
 
-        val spinner: Spinner = view.findViewById(R.id.category_list)
+
         ArrayAdapter(
             requireActivity().baseContext,
             android.R.layout.simple_spinner_item,
@@ -85,6 +59,40 @@ class CreateOrUpdateTaskBottomSheet(
             }
 
         }
+
+
+        if(task == null) {
+            tvTitle.setText(R.string.create_task_title)
+            btnCreate.setText(R.string.create)
+        }else{
+            tvTitle.setText(R.string.update_task_title)
+            btnCreate.setText(R.string.update)
+            tieTaskName.setText(task.name)
+
+            val currentCategory = categoryList.first { it.name == task.category }
+            val index = categoryList.indexOf(currentCategory)
+
+            spinner.setSelection(index)
+        }
+
+
+        btnCreate.setOnClickListener{
+            val name = tieTaskName.text.toString()
+            if(taskCategory != null){
+                onCreateClicked.invoke(
+                TaskUiData(
+                    id = 0,
+                    name = name,
+                    category = requireNotNull(taskCategory)
+                )
+                )
+                dismiss()
+            } else {
+                Snackbar.make(btnCreate, "Please select a category", Snackbar.LENGTH_LONG).show()
+            }
+
+        }
+
 
         return view
     }
