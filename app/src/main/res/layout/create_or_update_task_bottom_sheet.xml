@@ -11,7 +11,7 @@
         android:layout_margin="16dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:text="Create Task"
+        android:text="@string/create_task_title"
         android:textSize="24sp"
         android:textStyle="bold" />
     
@@ -41,7 +41,7 @@
 
     <Button
         android:id="@+id/btn_task_create"
-        android:text="Create"
+        android:text="@string/create"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
