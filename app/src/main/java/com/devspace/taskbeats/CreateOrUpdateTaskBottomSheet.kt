@@ -16,7 +16,8 @@ import com.google.android.material.textfield.TextInputEditText
 class CreateOrUpdateTaskBottomSheet(
     private val categoryList: List<CategoryUiData>,
     private val task: TaskUiData? = null,
-    private val onCreateClicked: (TaskUiData) -> Unit
+    private val onCreateClicked: (TaskUiData) -> Unit,
+    private val onUpdateClicked: (TaskUiData) -> Unit,
 ) : BottomSheetDialogFragment() {
 
     override fun onCreateView(
@@ -79,13 +80,24 @@ class CreateOrUpdateTaskBottomSheet(
         btnCreate.setOnClickListener{
             val name = tieTaskName.text.toString()
             if(taskCategory != null){
-                onCreateClicked.invoke(
-                TaskUiData(
-                    id = 0,
-                    name = name,
-                    category = requireNotNull(taskCategory)
-                )
-                )
+
+                if(task == null){
+                    onCreateClicked.invoke(
+                        TaskUiData(
+                            id = 0,
+                            name = name,
+                            category = requireNotNull(taskCategory)
+                    )
+                    )
+                }else {
+                    onUpdateClicked.invoke(
+                        TaskUiData(
+                            id = task.id,
+                            name = name,
+                            category = requireNotNull(taskCategory)
+                        )
+                    )
+                }
                 dismiss()
             } else {
                 Snackbar.make(btnCreate, "Please select a category", Snackbar.LENGTH_LONG).show()
