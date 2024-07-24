@@ -164,6 +164,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun deleteTask(taskEntity: TaskEntity){
+        GlobalScope.launch(Dispatchers.IO) {
+            taskDao.delete(taskEntity)
+            getTaskFromDataBase()
+        }
+    }
+
 
 
     private fun showCreateUpdateTaskBottomSheet(taskUiData: TaskUiData? = null){
@@ -184,6 +191,14 @@ class MainActivity : AppCompatActivity() {
                     category = taskToBeUpdated.category
                 )
                 updateTask(taskEntityToBeUpdate)
+            },
+            onDeleteClicked = { taskToBeDeleted ->
+                val taskEntityToBeDeleted =  TaskEntity(
+                    id = taskToBeDeleted.id,
+                    name = taskToBeDeleted.name,
+                    category = taskToBeDeleted.category
+                )
+                deleteTask(taskEntityToBeDeleted)
             }
         )
         createTaskBottomSheet.show(
