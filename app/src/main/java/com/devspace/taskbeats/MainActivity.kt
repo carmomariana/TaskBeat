@@ -53,6 +53,13 @@ class MainActivity : AppCompatActivity() {
             showCreateUpdateTaskBottomSheet(task)
 
         }
+        categoryAdapter.setOnLongClickListener { categoryToBeDeleted ->
+            val categoryEntityToBeDeleted = CategoryEntity(
+            categoryToBeDeleted.name,
+            categoryToBeDeleted.isSelected
+            )
+            deleteCategory(categoryEntityToBeDeleted)
+        }
 
         categoryAdapter.setOnClickListener { selected ->
             if (selected.name == "+") {
@@ -171,7 +178,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
+    private fun deleteCategory(categoryEntity: CategoryEntity){
+        GlobalScope.launch(Dispatchers.IO) {
+            categoryDao.delete(categoryEntity)
+            getCategoriesFromDataBase()
+        }
+    }
 
     private fun showCreateUpdateTaskBottomSheet(taskUiData: TaskUiData? = null){
         val createTaskBottomSheet = CreateOrUpdateTaskBottomSheet(
