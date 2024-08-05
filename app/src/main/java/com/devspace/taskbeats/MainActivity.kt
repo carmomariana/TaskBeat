@@ -88,11 +88,12 @@ class MainActivity : AppCompatActivity() {
             } else {
                 val categoryTemp = categories.map { item ->
                     when {
-                        item.name == selected.name && !item.isSelected -> item.copy(
+                        item.name == selected.name && item.isSelected -> item.copy(
                             isSelected = true
                         )
 
-                        item.name == selected.name && item.isSelected -> item.copy(isSelected = false)
+                        item.name == selected.name && !item.isSelected -> item.copy(isSelected = true)
+                        item.name != selected.name && item.isSelected -> item.copy(isSelected = false)
                         else -> item
                     }
                 }
@@ -154,9 +155,18 @@ class MainActivity : AppCompatActivity() {
                     isSelected = false
                 )
             )
+        val categoryListTemp = mutableListOf(
+            CategoryUiData(
+                name = "ALL",
+                isSelected = true,
+
+            )
+        )
+
+            categoryListTemp.addAll(categoriesUiData)
             GlobalScope.launch(Dispatchers.Main) {
-                categories = categoriesUiData
-                categoryAdapter.submitList(categoriesUiData)
+                categories = categoryListTemp
+                categoryAdapter.submitList(categories)
             }
 
     }
