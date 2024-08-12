@@ -2,18 +2,16 @@ package com.devspace.taskbeats
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings.Global
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private var categories = listOf<CategoryUiData>()
+    private var categoriesEntity = listOf<CategoryEntity>()
     private var tasks = listOf<TaskUiData>()
 
     private val categoryAdapter = CategoryListAdapter()
@@ -143,6 +141,7 @@ class MainActivity : AppCompatActivity() {
     private fun getCategoriesFromDataBase() {
 
             val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
+            categoriesEntity = categoriesFromDb
             val categoriesUiData = categoriesFromDb.map {
                 CategoryUiData(
                     name = it.name,
@@ -248,7 +247,7 @@ class MainActivity : AppCompatActivity() {
     private fun showCreateUpdateTaskBottomSheet(taskUiData: TaskUiData? = null){
         val createTaskBottomSheet = CreateOrUpdateTaskBottomSheet(
             task = taskUiData,
-            categoryList = categories,
+            categoryList = categoriesEntity,
             onCreateClicked = { taskToBeCreated ->
                 val taskEntityToBeInsert = TaskEntity(
                     name = taskToBeCreated.name,
