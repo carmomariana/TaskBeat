@@ -2,6 +2,9 @@ package com.devspace.taskbeats
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Button
+import android.widget.LinearLayout
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -13,6 +16,10 @@ class MainActivity : AppCompatActivity() {
     private var categories = listOf<CategoryUiData>()
     private var categoriesEntity = listOf<CategoryEntity>()
     private var tasks = listOf<TaskUiData>()
+
+    private lateinit var rvCategory: RecyclerView
+    private lateinit var ctnEmptyView: LinearLayout
+    private lateinit var fabCreateTask: FloatingActionButton
 
     private val categoryAdapter = CategoryListAdapter()
     private val taskAdapter by lazy {
@@ -38,9 +45,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val rvCategory = findViewById<RecyclerView>(R.id.rv_categories)
+        rvCategory = findViewById(R.id.rv_categories)
+        ctnEmptyView = findViewById(R.id.ll_empty_view)
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
-        val fabCreateTask = findViewById<FloatingActionButton>(R.id.fab_create_task)
+        fabCreateTask = findViewById(R.id.fab_create_task)
+        val btnCreateEmpty = findViewById<Button>(R.id.btn_create_empty)
+
+        btnCreateEmpty.setOnClickListener {
+            showCreateCategoryBottomSheet()
+        }
 
 
         fabCreateTask.setOnClickListener {
@@ -52,37 +65,28 @@ class MainActivity : AppCompatActivity() {
 
         }
         categoryAdapter.setOnLongClickListener { categoryToBeDeleted ->
-            if(categoryToBeDeleted.name!= "+" && categoryToBeDeleted.name != "ALL"){
-            val title: String = "Important"
-            val description: String = "By deleting a category you will delete all tasks"
-            val btnText: String = "Delete"
+            if (categoryToBeDeleted.name != "+" && categoryToBeDeleted.name != "ALL") {
+                val title: String = "Important"
+                val description: String = "By deleting a category you will delete all tasks"
+                val btnText: String = "Delete"
 
-            showInfoDialog(
-                title,
-                description,
-                btnText
-            ){
-                val categoryEntityToBeDeleted = CategoryEntity(
-                categoryToBeDeleted.name,
-                categoryToBeDeleted.isSelected
-            )
-            deleteCategory(categoryEntityToBeDeleted)
+                showInfoDialog(
+                    title,
+                    description,
+                    btnText
+                ) {
+                    val categoryEntityToBeDeleted = CategoryEntity(
+                        categoryToBeDeleted.name,
+                        categoryToBeDeleted.isSelected
+                    )
+                    deleteCategory(categoryEntityToBeDeleted)
+                }
             }
-        }
         }
 
         categoryAdapter.setOnClickListener { selected ->
             if (selected.name == "+") {
-                val createCategoryBottomSheet = CreateCategoryBottomSheet { categoryName ->
-                    val categoryEntity = CategoryEntity(
-                        name = categoryName,
-                        isSelected = false
-                    )
-                    insertCategory(categoryEntity)
-
-                }
-                createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet")
-
+                showCreateCategoryBottomSheet()
             } else {
                 val categoryTemp = categories.map { item ->
                     when {
@@ -96,13 +100,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                    if (selected.name != "ALL") {
-                        filterTaskByCategoryName(selected.name)
-                    } else {
-                        GlobalScope.launch(Dispatchers.IO) {
-                            getTaskFromDataBase()
-                        }
+                if (selected.name != "ALL") {
+                    filterTaskByCategoryName(selected.name)
+                } else {
+                    GlobalScope.launch(Dispatchers.IO) {
+                        getTaskFromDataBase()
                     }
+                }
 
                 categoryAdapter.submitList(categoryTemp)
             }
@@ -120,12 +124,13 @@ class MainActivity : AppCompatActivity() {
             getTaskFromDataBase()
         }
     }
-    private fun showInfoDialog (
+
+    private fun showInfoDialog(
         title: String,
         description: String,
         btnText: String,
         onClick: () -> Unit
-    ){
+    ) {
         val infoBottomSheet = InfoBottomSheet(
             title = title,
             description = description,
@@ -140,85 +145,97 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCategoriesFromDataBase() {
 
-            val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
-            categoriesEntity = categoriesFromDb
-            val categoriesUiData = categoriesFromDb.map {
-                CategoryUiData(
-                    name = it.name,
-                    isSelected = it.isSelected
-                )
-            }.toMutableList()
+        val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
+        categoriesEntity = categoriesFromDb
 
-            // Add fake + category
-            categoriesUiData.add(
-                CategoryUiData(
-                    name = "+",
-                    isSelected = false
-                )
+        GlobalScope.launch(Dispatchers.Main) {
+            if (categoriesEntity.isEmpty()) {
+                rvCategory.isVisible = false
+                fabCreateTask.isVisible = false
+                ctnEmptyView.isVisible = true
+            } else {
+                rvCategory.isVisible = true
+                fabCreateTask.isVisible = true
+                ctnEmptyView.isVisible = false
+            }
+        }
+        val categoriesUiData = categoriesFromDb.map {
+            CategoryUiData(
+                name = it.name,
+                isSelected = it.isSelected
             )
+        }.toMutableList()
+
+        // Add fake + category
+        categoriesUiData.add(
+            CategoryUiData(
+                name = "+",
+                isSelected = false
+            )
+        )
         val categoryListTemp = mutableListOf(
             CategoryUiData(
                 name = "ALL",
                 isSelected = true,
 
-            )
+                )
         )
 
         categoryListTemp.addAll(categoriesUiData)
-            GlobalScope.launch(Dispatchers.Main) {
-                categories = categoryListTemp
-                categoryAdapter.submitList(categories)
-            }
+        GlobalScope.launch(Dispatchers.Main) {
+            categories = categoryListTemp
+            categoryAdapter.submitList(categories)
+        }
 
     }
 
     private fun getTaskFromDataBase() {
-            val taskFromDb: List<TaskEntity> = taskDao.getAll()
-            val taskUiData: List<TaskUiData> = taskFromDb.map {
-                TaskUiData(
-                    id = it.id,
-                    name = it.name,
-                    category = it.category
+        val taskFromDb: List<TaskEntity> = taskDao.getAll()
+        val taskUiData: List<TaskUiData> = taskFromDb.map {
+            TaskUiData(
+                id = it.id,
+                name = it.name,
+                category = it.category
 
-                )
-            }
-
-            GlobalScope.launch(Dispatchers.Main) {
-                tasks = taskUiData
-                taskAdapter.submitList(taskUiData)
-            }
+            )
         }
 
+        GlobalScope.launch(Dispatchers.Main) {
+            tasks = taskUiData
+            taskAdapter.submitList(taskUiData)
+        }
+    }
 
-    private fun insertCategory(categoryEntity: CategoryEntity){
-        GlobalScope.launch(Dispatchers.IO){
-             categoryDao.insert(categoryEntity)
+
+    private fun insertCategory(categoryEntity: CategoryEntity) {
+        GlobalScope.launch(Dispatchers.IO) {
+            categoryDao.insert(categoryEntity)
             getCategoriesFromDataBase()
         }
     }
 
-    private fun insertTask(taskEntity: TaskEntity){
-        GlobalScope.launch(Dispatchers.IO){
+    private fun insertTask(taskEntity: TaskEntity) {
+        GlobalScope.launch(Dispatchers.IO) {
             taskDao.insert(taskEntity)
             getTaskFromDataBase()
         }
     }
 
-    private fun updateTask(taskEntity: TaskEntity){
+    private fun updateTask(taskEntity: TaskEntity) {
         GlobalScope.launch(Dispatchers.IO) {
-        taskDao.update(taskEntity)
+            taskDao.update(taskEntity)
             getTaskFromDataBase()
         }
     }
 
-    private fun deleteTask(taskEntity: TaskEntity){
+    private fun deleteTask(taskEntity: TaskEntity) {
         GlobalScope.launch(Dispatchers.IO) {
             taskDao.delete(taskEntity)
             getTaskFromDataBase()
         }
     }
 
-    private fun deleteCategory(categoryEntity: CategoryEntity){
+    private fun deleteCategory(categoryEntity: CategoryEntity) {
         GlobalScope.launch(Dispatchers.IO) {
             val tasksToBeDeleted = taskDao.getAllByCategoryName(categoryEntity.name)
             taskDao.deleteAll(tasksToBeDeleted)
@@ -227,7 +244,8 @@ class MainActivity : AppCompatActivity() {
             getTaskFromDataBase()
         }
     }
-    private fun filterTaskByCategoryName(category:String) {
+
+    private fun filterTaskByCategoryName(category: String) {
         GlobalScope.launch(Dispatchers.IO) {
             val tasksFromDb: List<TaskEntity> = taskDao.getAllByCategoryName(category)
             val tasksUiData: List<TaskUiData> = tasksFromDb.map {
@@ -244,7 +262,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showCreateUpdateTaskBottomSheet(taskUiData: TaskUiData? = null){
+    private fun showCreateUpdateTaskBottomSheet(taskUiData: TaskUiData? = null) {
         val createTaskBottomSheet = CreateOrUpdateTaskBottomSheet(
             task = taskUiData,
             categoryList = categoriesEntity,
@@ -256,7 +274,7 @@ class MainActivity : AppCompatActivity() {
                 insertTask(taskEntityToBeInsert)
             },
             onUpdateClicked = { taskToBeUpdated ->
-                val taskEntityToBeUpdate =  TaskEntity(
+                val taskEntityToBeUpdate = TaskEntity(
                     id = taskToBeUpdated.id,
                     name = taskToBeUpdated.name,
                     category = taskToBeUpdated.category
@@ -264,7 +282,7 @@ class MainActivity : AppCompatActivity() {
                 updateTask(taskEntityToBeUpdate)
             },
             onDeleteClicked = { taskToBeDeleted ->
-                val taskEntityToBeDeleted =  TaskEntity(
+                val taskEntityToBeDeleted = TaskEntity(
                     id = taskToBeDeleted.id,
                     name = taskToBeDeleted.name,
                     category = taskToBeDeleted.category
@@ -276,6 +294,18 @@ class MainActivity : AppCompatActivity() {
             supportFragmentManager,
             "createTaskBottomSheet"
         )
+    }
+
+    private fun showCreateCategoryBottomSheet() {
+        val createCategoryBottomSheet = CreateCategoryBottomSheet { categoryName ->
+            val categoryEntity = CategoryEntity(
+                name = categoryName,
+                isSelected = false
+            )
+            insertCategory(categoryEntity)
+
+        }
+        createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet")
     }
 }
 
